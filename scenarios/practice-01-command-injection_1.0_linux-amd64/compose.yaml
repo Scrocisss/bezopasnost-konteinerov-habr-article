@@ -1,0 +1,38 @@
+name: container-security-command-injection
+
+services:
+  application:
+    image: container-security-lab/command-injection:1.0-vulnerable
+    pull_policy: never
+    container_name: lab-command-injection
+    init: true
+    user: "10001:10001"
+    ports:
+      - "0.0.0.0:8080:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 128m
+    cpus: 0.50
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "2"

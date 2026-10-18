@@ -1,0 +1,45 @@
+name: container-security-writable-bind-mount
+
+services:
+  application:
+    image: container-security-lab/writable-bind-mount:1.0-vulnerable
+    pull_policy: never
+    container_name: lab-writable-bind-mount
+    init: true
+    user: "10001:10001"
+    ports:
+      - "0.0.0.0:8080:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m
+    volumes:
+      - type: bind
+        source: /srv/container-security-lab/practice-02
+        target: /mnt/host-data
+        read_only: false
+        bind:
+          propagation: rprivate
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 128m
+    cpus: 0.50
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=5)
+      interval: 10s
+      timeout: 8s
+      retries: 10
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "2"
