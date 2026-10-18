@@ -1,0 +1,65 @@
+name: container-security-docker-socket
+
+services:
+  control-center:
+    image: container-security-lab/control-center:1.0-vulnerable
+    pull_policy: never
+    container_name: lab-docker-socket
+    init: true
+    user: "10001:10001"
+    group_add:
+      - "${DOCKER_SOCKET_GID}"
+    ports:
+      - "0.0.0.0:8080:8080"
+    read_only: true
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        read_only: false
+        bind:
+          propagation: rprivate
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 64
+    mem_limit: 128m
+    cpus: 0.50
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=5)"]
+      interval: 10s
+      timeout: 8s
+      retries: 10
+      start_period: 15s
+    logging: {driver: json-file, options: {max-size: 10m, max-file: "2"}}
+    networks: [docker-socket-lab]
+
+  target-service:
+    image: container-security-lab/control-target:1.0
+    pull_policy: never
+    container_name: lab-docker-target
+    init: true
+    user: "10002:10002"
+    ports:
+      - "0.0.0.0:8090:8090"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 32
+    mem_limit: 64m
+    cpus: 0.25
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health', timeout=5)"]
+      interval: 10s
+      timeout: 8s
+      retries: 10
+      start_period: 10s
+    logging: {driver: json-file, options: {max-size: 5m, max-file: "2"}}
+    networks: [docker-socket-lab]
+
+networks:
+  docker-socket-lab:
+    name: container-security-docker-socket
