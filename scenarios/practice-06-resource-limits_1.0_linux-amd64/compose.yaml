@@ -1,0 +1,53 @@
+name: container-security-resource-limits
+
+services:
+  unlimited:
+    image: container-security-lab/resource-limits:1.0-vulnerable
+    pull_policy: never
+    container_name: lab-resource-unlimited
+    init: true
+    user: "10006:10006"
+    ports:
+      - "127.0.0.1:8088:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=32m
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks: [resource-limits-lab]
+
+  limited:
+    image: container-security-lab/resource-limits:1.0-vulnerable
+    pull_policy: never
+    container_name: lab-resource-limited
+    init: true
+    user: "10006:10006"
+    ports:
+      - "127.0.0.1:8089:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=32m
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+    mem_limit: 64m
+    cpus: 0.25
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)"]
+      interval: 10s
+      timeout: 30s
+      retries: 10
+      start_period: 30s
+    networks: [resource-limits-lab]
+
+networks:
+  resource-limits-lab:
+    name: container-security-resource-limits
